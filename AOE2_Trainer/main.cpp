@@ -6,49 +6,39 @@ std::shared_ptr <CMemory>	g_memoryHelper;
 HANDLE						g_hProcess		= INVALID_HANDLE_VALUE;
 std::uint32_t				g_ulBaseAddress = 0UL;
 
+bool IncreaseResource(std::uint32_t ulPointer, std::uint32_t ulOffsetList[], std::uint32_t dwLastOffset = 0x0, std::size_t uiOffsetListSize = 4)
+{
+	auto pTarget = g_memoryHelper->ReadMemory<std::uintptr_t>(g_ulBaseAddress + ulPointer);
+	for (std::size_t i = 0; i < uiOffsetListSize; ++i)
+		pTarget = g_memoryHelper->ReadMemory<std::uintptr_t>(pTarget + ulOffsetList[i]);
+
+	auto oldValue = g_memoryHelper->ReadMemory<float>(pTarget + dwLastOffset);
+	if (oldValue < 0.f || oldValue > 1000000.f)
+		return false;
+
+	auto newValueRet = g_memoryHelper->WriteMemory<float>(pTarget + dwLastOffset, oldValue + RESOURCE_INCREASE_AMOUNT);
+	return newValueRet;
+}
+
 void IncreaseWood()
 {
-	auto pTarget = g_memoryHelper->ReadMemory<std::uintptr_t>(g_ulBaseAddress + 0x9C22BC); // https://vgy.me/RNktMU.png
-	DWORD offsetList[] = { 0x4, 0x184, 0x8, 0x3C };
-	for (std::size_t i = 0; i < _countof(offsetList); ++i)
-		pTarget = g_memoryHelper->ReadMemory<std::uintptr_t>(pTarget + offsetList[i]);
-
-	auto oldValue = g_memoryHelper->ReadMemory<float>(pTarget + 0x4);
-	// printf("%f\n", oldValue);
-	auto newValueRet = g_memoryHelper->WriteMemory<float>(pTarget + 0x4, oldValue + RESOURCE_INCREASE_AMOUNT);
+	std::uint32_t offsetList[] = { 0x4, 0x184, 0x8, 0x3C };
+	IncreaseResource(0x9C22BC, offsetList, 0x4);
 }
 void IncreaseFood()
 {
-	auto pTarget = g_memoryHelper->ReadMemory<std::uintptr_t>(g_ulBaseAddress + 0x6D23EC); // https://vgy.me/evIGLJ.png
-	DWORD offsetList[] = { 0xC8, 0x184, 0x8, 0x3C };
-	for (std::size_t i = 0; i < _countof(offsetList); ++i)
-		pTarget = g_memoryHelper->ReadMemory<std::uintptr_t>(pTarget + offsetList[i]);
-
-	auto oldValue = g_memoryHelper->ReadMemory<float>(pTarget);
-	// printf("%f\n", oldValue);
-	auto newValueRet = g_memoryHelper->WriteMemory<float>(pTarget, oldValue + RESOURCE_INCREASE_AMOUNT);
+	std::uint32_t offsetList[] = { 0xC8, 0x184, 0x8, 0x3C };
+	IncreaseResource(0x6D23EC, offsetList);
 }
 void IncreaseGold()
 {
-	auto pTarget = g_memoryHelper->ReadMemory<std::uintptr_t>(g_ulBaseAddress + 0x9C22BC); // https://vgy.me/UtQS8W.png
-	DWORD offsetList[] = { 0x4, 0x184, 0xC, 0x48 };
-	for (std::size_t i = 0; i < _countof(offsetList); ++i)
-		pTarget = g_memoryHelper->ReadMemory<std::uintptr_t>(pTarget + offsetList[i]);
-
-	auto oldValue = g_memoryHelper->ReadMemory<float>(pTarget + 0xC);
-	// printf("%f\n", oldValue);
-	auto newValueRet = g_memoryHelper->WriteMemory<float>(pTarget + 0xC, oldValue + RESOURCE_INCREASE_AMOUNT);
+	std::uint32_t offsetList[] = { 0x4, 0x184, 0xC, 0x48 };
+	IncreaseResource(0x9C22BC, offsetList, 0xC);
 }
 void IncreaseStone()
 {
-	auto pTarget = g_memoryHelper->ReadMemory<std::uintptr_t>(g_ulBaseAddress + 0x9C22BC); // https://vgy.me/5icSGu.png
-	DWORD offsetList[] = { 0x4, 0x184, 0x8, 0x3C };
-	for (std::size_t i = 0; i < _countof(offsetList); ++i)
-		pTarget = g_memoryHelper->ReadMemory<std::uintptr_t>(pTarget + offsetList[i]);
-
-	auto oldValue = g_memoryHelper->ReadMemory<float>(pTarget + 0x8);
-	// printf("%f\n", oldValue);
-	auto newValueRet = g_memoryHelper->WriteMemory<float>(pTarget + 0x8, oldValue + RESOURCE_INCREASE_AMOUNT);
+	std::uint32_t offsetList[] = { 0x4, 0x184, 0x8, 0x3C };
+	IncreaseResource(0x9C22BC, offsetList, 0x8);
 }
 
 typedef VOID(__cdecl* TIncreaseFunctionType)(void);
