@@ -2,47 +2,38 @@
 #include "BasicMemory.h"
 #include "ProcessHelper.h"
 
-std::shared_ptr <CMemory>	g_memoryHelper;
-HANDLE						g_hProcess		= INVALID_HANDLE_VALUE;
-std::uint32_t				g_ulBaseAddress = 0UL;
-
-bool IncreaseResource(std::uint32_t ulPointer, std::uint32_t ulOffsetList[], std::uint32_t dwLastOffset = 0x0, std::size_t uiOffsetListSize = 4)
+enum EResources
 {
-	auto pTarget = g_memoryHelper->ReadMemory<std::uintptr_t>(g_ulBaseAddress + ulPointer);
-	for (std::size_t i = 0; i < uiOffsetListSize; ++i)
-		pTarget = g_memoryHelper->ReadMemory<std::uintptr_t>(pTarget + ulOffsetList[i]);
+	EResources_Food,
+	EResources_Wood,
+	EResources_Stone,
+	EResources_Gold
+};
 
-	auto oldValue = g_memoryHelper->ReadMemory<float>(pTarget + dwLastOffset);
+std::shared_ptr <CMemory>	g_memoryHelper;
+HANDLE						g_hProcess			= INVALID_HANDLE_VALUE;
+std::uint32_t				g_ulBaseAddress		= 0UL;
+
+const std::uintptr_t		g_pResourceBase		= 0x9C22BC;
+const std::uint32_t			g_offsetList[]		= { 0x4, 0x184, 0x8, 0x3C };
+
+static bool IncreaseResource(std::uint32_t ulOffset)
+{
+	auto pTarget = g_memoryHelper->ReadMemory<std::uintptr_t>(g_ulBaseAddress + g_pResourceBase);
+	for (std::size_t i = 0; i < _countof(g_offsetList); ++i)
+		pTarget = g_memoryHelper->ReadMemory<std::uintptr_t>(pTarget + g_offsetList[i]);
+
+	auto oldValue = g_memoryHelper->ReadMemory<float>(pTarget + ulOffset);
 	if (oldValue < 0.f || oldValue > 1000000.f)
 		return false;
 
-	auto newValueRet = g_memoryHelper->WriteMemory<float>(pTarget + dwLastOffset, oldValue + RESOURCE_INCREASE_AMOUNT);
+	auto newValueRet = g_memoryHelper->WriteMemory<float>(pTarget + ulOffset, oldValue + RESOURCE_INCREASE_AMOUNT);
 	return newValueRet;
 }
 
-void IncreaseWood()
-{
-	std::uint32_t offsetList[] = { 0x4, 0x184, 0x8, 0x3C };
-	IncreaseResource(0x9C22BC, offsetList, 0x4);
-}
-void IncreaseFood()
-{
-	std::uint32_t offsetList[] = { 0xC8, 0x184, 0x8, 0x3C };
-	IncreaseResource(0x6D23EC, offsetList);
-}
-void IncreaseGold()
-{
-	std::uint32_t offsetList[] = { 0x4, 0x184, 0xC, 0x48 };
-	IncreaseResource(0x9C22BC, offsetList, 0xC);
-}
-void IncreaseStone()
-{
-	std::uint32_t offsetList[] = { 0x4, 0x184, 0x8, 0x3C };
-	IncreaseResource(0x9C22BC, offsetList, 0x8);
-}
 
-typedef VOID(__cdecl* TIncreaseFunctionType)(void);
-void OnKeyPress(DWORD dwKey, TIncreaseFunctionType pIncreaseFunction)
+typedef bool(__cdecl* TIncreaseFunctionType)(std::uint32_t ulOffset);
+void OnKeyPress(DWORD dwKey, TIncreaseFunctionType pIncreaseFunction, std::uint32_t ulParam)
 {
 	if (GetAsyncKeyState(dwKey) & 0x8000)
 	{
@@ -50,7 +41,7 @@ void OnKeyPress(DWORD dwKey, TIncreaseFunctionType pIncreaseFunction)
 			Sleep(1);
 
 		Beep(750, 250);
-		pIncreaseFunction();
+		pIncreaseFunction(ulParam);
 	}
 }
 
@@ -96,10 +87,10 @@ int main()
 
 	while (true)
 	{
-		OnKeyPress(VK_F5, IncreaseWood);
-		OnKeyPress(VK_F6, IncreaseFood);
-		OnKeyPress(VK_F7, IncreaseGold);
-		OnKeyPress(VK_F8, IncreaseStone);
+		OnKeyPress(VK_F5, IncreaseResource, EResources_Food  * sizeof(float) /* 0x0 */);
+		OnKeyPress(VK_F6, IncreaseResource, EResources_Wood  * sizeof(float) /* 0x4 */);
+		OnKeyPress(VK_F7, IncreaseResource, EResources_Stone * sizeof(float) /* 0x8 */);
+		OnKeyPress(VK_F8, IncreaseResource, EResources_Gold  * sizeof(float) /* 0xC */);
 
 		Sleep(1);
 	}
